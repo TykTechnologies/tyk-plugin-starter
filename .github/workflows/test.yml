@@ -1,0 +1,56 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  starter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin-bundle-starter
+          path: dist/
+          retention-days: 7
+
+  examples:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [jws-request-signing]
+    defaults:
+      run:
+        working-directory: examples/${{ matrix.example }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: examples/${{ matrix.example }}/package-lock.json
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:bundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-${{ matrix.example }}
+          path: examples/${{ matrix.example }}/dist/bundle.zip
+          retention-days: 7
