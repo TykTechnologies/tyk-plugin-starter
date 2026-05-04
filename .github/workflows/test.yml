@@ -32,7 +32,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        example: [jws-request-signing]
+        example:
+          - jws-request-signing
+          - response-pii-redaction
+          - auth-check-hmac
+          - post-correlation-id
+          - post-key-auth-tenant-context
     defaults:
       run:
         working-directory: examples/${{ matrix.example }}

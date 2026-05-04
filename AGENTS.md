@@ -48,19 +48,25 @@ handler.NewProcessRequest(function (request, session, config) {
 
 The variable MUST be named `handler` (or match the `name` in `manifest.json`). The gateway calls `{name}.DoProcessRequest(...)` against the goja runtime's **global** scope.
 
+**Pick the right return helper for your hook** — the example above uses `ReturnData`, which is correct for `pre`/`post`/`post_key_auth`. **`auth_check` is different**: it uses `handler.NewProcessRequest` for the callback but must return via `handler.ReturnAuthData(request, session)` so the gateway gets a session shape. **`response` hooks** use `handler.NewProcessResponse` and `handler.ReturnResponseData(response, sessionMeta)`. See the table further down.
+
 **Why the `globalThis` assignment is required.** Webpack wraps every entry module in a factory function for code splitting, so `var handler` at the top of your `.ts` file is local to that factory, not visible to the gateway. Assigning to `globalThis.handler` re-exposes it. Without this line, your tests pass but the bundle fails in production with `ReferenceError: handler is not defined at <eval>:1:1`. The starter's harness (`test/_harness.ts`) asserts this assignment exists so this gap doesn't slip through.
 
 ## Hook types — pick exactly one
 
-| Hook | When it fires |
-|---|---|
-| `pre` | Before authentication |
-| `auth_check` | Replaces built-in authentication |
-| `post_key_auth` | After authentication, before post hooks |
-| `post` | After auth, before upstream is called |
-| `response` | After upstream returns, before client receives |
+| Hook | When it fires | Return helper | Manifest shape | Reads session? |
+|---|---|---|---|---|
+| `pre` | Before authentication | `ReturnData` | array `[ {...} ]` | no — session isn't populated yet |
+| `auth_check` | Replaces built-in authentication | `ReturnAuthData` | **object `{...}`** (singular) | constructs the session |
+| `post_key_auth` | After authentication, before post hooks | `ReturnData` | array `[ {...} ]` | yes — set `require_session: true` |
+| `post` | After auth, before upstream is called | `ReturnData` | array `[ {...} ]` | yes if reading session — set `require_session: true` |
+| `response` | After upstream returns, before client receives | `ReturnResponseData` | array `[ {...} ]` | optional — set `require_session: true` if needed |
 
 Set the hook in `manifest.json`. One plugin = one hook. To do work in multiple hooks, write multiple plugins.
+
+**Two manifest gotchas, easy to miss:**
+1. `auth_check` is a **singular object** under `custom_middleware`, not an array. Every other hook is an array. The gateway parses these as different Go types — putting `auth_check: [{...}]` (array) silently does nothing.
+2. `require_session` must be `true` when your plugin reads `session.*` data (everything except `pre`). The default is `false`. With it `false`, `session.meta_data` arrives empty even after authentication.
 
 ## Return helpers
 
@@ -85,10 +91,33 @@ Set the hook in `manifest.json`. One plugin = one hook. To do work in multiple h
 - `crypto-js` — hashing, AES, HMAC (NOT Node's `crypto`)
 - `lodash`, `ramda` — utilities
 - `date-fns`, `dayjs` — dates
-- `uuid` — IDs
+- `uuid` — IDs (see crypto.getRandomValues shim below)
 - `ajv`, `joi`, `zod` — validation
 - `fast-xml-parser` — XML/JSON conversion
 - `aws4` — SigV4 signing for AWS HTTP APIs
+
+### Web Crypto compatibility shim
+
+Goja has no `crypto` global, so libraries that call `crypto.getRandomValues()` (uuid v9, nanoid, jose's random helpers, etc.) need a small shim — webpack's `crypto: false` fallback intentionally omits the Node polyfill. The fix is one short module imported before the offending library:
+
+```ts
+// src/crypto-shim.ts
+// Goja has no crypto global. Provide a Math.random()-backed getRandomValues
+// for libs that only need uniqueness (uuid v4, nanoid). NOT cryptographically
+// secure — do NOT use this if the values are security-sensitive (token
+// minting, key derivation, nonces).
+(function () {
+  var g: any = (globalThis as any);
+  if (g.crypto && typeof g.crypto.getRandomValues === 'function') return;
+  g.crypto = g.crypto || {};
+  g.crypto.getRandomValues = function (buf: any) {
+    for (var i = 0; i < buf.length; i++) buf[i] = (Math.random() * 256) | 0;
+    return buf;
+  };
+})();
+```
+
+Then `import './crypto-shim';` at the top of your plugin entry, before `import { v4 } from 'uuid'`. The `examples/post-correlation-id/` plugin uses this pattern; copy it verbatim. If you need cryptographic randomness, use `crypto-js` (`CryptoJS.lib.WordArray.random(16)`) instead — it ships its own RNG.
 
 ## Testing
 
@@ -117,7 +146,10 @@ A Tyk plugin bundle is **a zip file** containing two things at the root:
 {
   "file_list": ["plugin.js"],
   "custom_middleware": {
+    // pre, post, post_key_auth, response are arrays:
     "pre":  [ { "name": "handler", "path": "plugin.js", "require_session": false, "raw_body_only": false } ],
+    // auth_check is a SINGULAR object — not an array:
+    // "auth_check": { "name": "handler", "path": "plugin.js", "require_session": false, "raw_body_only": false },
     "driver": "javascript"
   },
   "checksum": "<md5 hex of file_list bytes concatenated>",

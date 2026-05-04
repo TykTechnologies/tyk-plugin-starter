@@ -1,0 +1,31 @@
+services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  bundle-server:
+    image: python:3.12-alpine
+    volumes:
+      - ./bundles:/srv:ro
+    working_dir: /srv
+    command: python3 -m http.server 8500
+    expose:
+      - "8500"
+
+  gateway:
+    image: ${TYK_IMAGE:-tyk-gateway:goja-dev}
+    depends_on:
+      redis:
+        condition: service_healthy
+      bundle-server:
+        condition: service_started
+    volumes:
+      - ./tyk.conf:/opt/tyk-gateway/tyk.conf:ro
+      - ./apps:/opt/tyk-gateway/apps:ro
+      - ./policies:/opt/tyk-gateway/policies:ro
+    ports:
+      - "18080:8080"

@@ -2,16 +2,22 @@
 
 Marquee plugin patterns demonstrating common Tyk plugin shapes. Copy a folder, modify, test, deploy.
 
-## Available
+## Available — one example per hook type
 
-- **[jws-request-signing](./jws-request-signing/)** — sign outbound requests with HMAC-SHA256 in JWS compact form (uses `crypto-js`).
+| Example | Hook | What it shows |
+|---|---|---|
+| [jws-request-signing](./jws-request-signing/) | `pre` | Sign outbound requests with HMAC-SHA256 in JWS compact form (uses `crypto-js`). |
+| [auth-check-hmac](./auth-check-hmac/) | `auth_check` | Replace built-in auth — validate `X-Signature: hex(HMAC-SHA256(method+url+body, secret))`, accept on match. |
+| [post-key-auth-tenant-context](./post-key-auth-tenant-context/) | `post_key_auth` | Read `session.meta_data.tenant_id`, inject `X-Tenant-Id` header for upstream. |
+| [post-correlation-id](./post-correlation-id/) | `post` | Preserve inbound `X-Correlation-Id` or generate UUID v4; uses the `uuid` npm package. |
+| [response-pii-redaction](./response-pii-redaction/) | `response` | Mask SSN-shaped patterns in response bodies before they reach the client. |
 
-## Coming soon
+Each example is unit-tested locally **and** runs against a real Tyk OSS gateway in CI via `e2e/` — see [e2e/README.md](../e2e/README.md).
 
-The remaining marquee patterns will land here:
+## Coming later
 
 - **soap-to-rest** — SOAP-to-REST conversion using `fast-xml-parser`
-- **brute-force-lockout** — track failed auth attempts in shared state, lock out attackers (uses `TykStore` when available)
+- **brute-force-lockout** — track failed auth attempts in shared state (uses `TykStore` when available)
 - **multi-tenant-rate-limit** — custom rate limit keyed by tenant claim
 - **aws-lambda-invoker** — invoke Lambda via signed HTTP using `aws4`
 - **jwe-body-encryption** — encrypt request body with `jose`

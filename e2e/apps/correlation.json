@@ -1,0 +1,27 @@
+{
+  "name": "correlation-e2e",
+  "api_id": "correlation-e2e",
+  "org_id": "default",
+  "use_keyless": true,
+  "active": true,
+  "definition": {
+    "location": "header",
+    "key": "x-api-version"
+  },
+  "version_data": {
+    "not_versioned": true,
+    "versions": {
+      "Default": {
+        "name": "Default",
+        "use_extended_paths": true
+      }
+    }
+  },
+  "custom_middleware_bundle": "post-correlation-id.zip",
+  "custom_middleware_bundle_disabled": false,
+  "proxy": {
+    "listen_path": "/correlation/",
+    "target_url": "http://httpbin.org/",
+    "strip_listen_path": true
+  }
+}
