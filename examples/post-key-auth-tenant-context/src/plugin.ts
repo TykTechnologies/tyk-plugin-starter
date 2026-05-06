@@ -1,4 +1,4 @@
-/// <reference path="../../../src/types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 // Tenant-context enricher.
 // Runs in the post_key_auth phase: after the gateway's built-in key authentication has

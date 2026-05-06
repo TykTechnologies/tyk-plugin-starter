@@ -1,4 +1,4 @@
-/// <reference path="../../../src/types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 // JWS request signer.
 // Signs request.Body with HMAC-SHA256 and sets X-Signature: header.payload.signature.

@@ -31,7 +31,7 @@ DO use:
 ## Handler pattern — every plugin
 
 ```ts
-/// <reference path="./types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 var handler = new TykJS.TykMiddleware.NewMiddleware({});
 

@@ -1,4 +1,4 @@
-/// <reference path="../../../src/types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 // Correlation ID injector (post hook).
 // Runs after auth, before upstream. Preserves an inbound X-Correlation-Id if

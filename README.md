@@ -19,7 +19,7 @@ That's the inner loop. **No Tyk component required to run any of it.**
 ## What's in the box
 
 - **Working starter plugin** in `src/plugin.ts` — injects an `X-Trace-Id` header on every request. Replace with your logic.
-- **TypeScript types** for the Tyk plugin API in `src/types.d.ts` — autocomplete in any IDE.
+- **TypeScript types** for the Tyk plugin API via [`@tyk-technologies/tyk-plugin-types`](https://github.com/TykTechnologies/tyk-plugin-types) — autocomplete in any IDE.
 - **Local test harness** in `test/_harness.ts` — mocks the goja runtime so tests run in plain Node via vitest.
 - **AGENTS.md** — the constraints brief for AI assistants. Keeps Claude/Cursor/Copilot from suggesting `import axios` or `async/await`.
 - **Webpack config** targeting ES5.1 — bundles your TypeScript plus npm deps into a single self-contained JS file the gateway can run.
@@ -41,7 +41,7 @@ You stay in the local loop until your plugin is ready. Only then do you touch th
 The handler pattern (see `src/plugin.ts`):
 
 ```ts
-/// <reference path="./types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 var handler = new TykJS.TykMiddleware.NewMiddleware({});
 

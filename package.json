@@ -11,6 +11,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "@tyk-technologies/tyk-plugin-types": "^0.1.0",
     "@types/node": "^20.10.0",
     "buffer": "^6.0.3",
     "ts-loader": "^9.5.1",

@@ -40,4 +40,4 @@ npm run build      # produces dist/plugin.js
 npm run build:bundle  # produces dist/bundle.zip for the bundle deploy path
 ```
 
-Examples reference the starter's harness and types via relative paths (`../../test/_harness.ts`, `../../src/types.d.ts`). When `@tyk/plugin-types` and `@tyk/plugin-test` ship on npm, the imports will swap to the package names.
+Examples consume types from [`@tyk-technologies/tyk-plugin-types`](https://www.npmjs.com/package/@tyk-technologies/tyk-plugin-types) on npm. The test harness still lives in the starter at `../../test/_harness.ts` — it'll move to a separate `@tyk/plugin-test` npm package in a future release.

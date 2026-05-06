@@ -1,4 +1,4 @@
-/// <reference path="../../../src/types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 // Response PII redactor.
 // Scrubs US Social Security Number-shaped strings (NNN-NN-NNNN) from response.Body

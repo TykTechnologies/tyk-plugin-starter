@@ -1,4 +1,4 @@
-/// <reference path="../../../src/types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 // Auth-check plugin: replaces built-in authentication with HMAC signature validation.
 // Client sends X-Signature: hex(HMAC-SHA256(method + url + body, hmac_secret)).
