@@ -39,3 +39,19 @@ Set `KEEP_STACK=1` to leave the compose stack up after tests run (useful for pok
 1. Build its bundle (`examples/<slug>/dist/bundle.zip`). `stage-bundles.mjs` auto-discovers any directory under `examples/` with a `dist/bundle.zip`.
 2. Add `e2e/apps/<short>.json` with `custom_middleware_bundle: "<slug>.zip"` and `proxy.listen_path: "/<short>/"`.
 3. Add `e2e/tests/<short>.sh` that curls the gateway and asserts plugin behavior. Exit 0 on pass, non-zero on fail. The runner aggregates pass/fail across all scripts.
+
+## Multiple plugins on one API
+
+The gateway accepts a list of bundles per API via `custom_middleware_bundles` — every bundle in the list runs in order on the matching hook. `apps/multi-bundle.json` and `tests/multi-bundle.sh` exercise this pattern by composing `pre-trace-id` and `jws-request-signing` on the same `pre` slot, then asserting both `X-Trace-Id` and `X-Signature` reach the upstream.
+
+```jsonc
+// apps/multi-bundle.json
+{
+  "custom_middleware_bundles": [
+    "pre-trace-id.zip",
+    "jws-request-signing.zip"
+  ]
+}
+```
+
+Both bundles export a global named `handler`; the gateway aliases each export under a per-(file, name) IIFE so they coexist without colliding.

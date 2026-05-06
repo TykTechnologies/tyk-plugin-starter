@@ -19,12 +19,12 @@ That's the inner loop. **No Tyk component required to run any of it.**
 ## What's in the box
 
 - **Working starter plugin** in `src/plugin.ts` — injects an `X-Trace-Id` header on every request. Replace with your logic.
-- **TypeScript types** for the Tyk plugin API via [`@tyk-technologies/tyk-plugin-types`](https://github.com/TykTechnologies/tyk-plugin-types) — autocomplete in any IDE.
+- **TypeScript types** for the Tyk plugin API via [`@tyk-technologies/tyk-plugin-types`](https://www.npmjs.com/package/@tyk-technologies/tyk-plugin-types) on npm — autocomplete in any IDE.
 - **Local test harness** in `test/_harness.ts` — mocks the goja runtime so tests run in plain Node via vitest.
 - **AGENTS.md** — the constraints brief for AI assistants. Keeps Claude/Cursor/Copilot from suggesting `import axios` or `async/await`.
 - **Webpack config** targeting ES5.1 — bundles your TypeScript plus npm deps into a single self-contained JS file the gateway can run.
-- **GitHub Actions** — `.github/workflows/test.yml` runs tests and builds on every push.
-- **Examples** in `examples/` — copy-and-adapt patterns for common plugin shapes (JWT validation, body encryption, multi-tenant rate limit, etc.). *Coming soon.*
+- **GitHub Actions** — runs tests and builds on every push, plus an end-to-end suite that exercises every example against a real goja-enabled Tyk OSS gateway in Docker (see [e2e/](./e2e/)).
+- **Examples** in [`examples/`](./examples/) — copy-and-adapt patterns covering every hook type (`pre`, `auth_check`, `post_key_auth`, `post`, `response`) plus a multi-bundle composition demo that runs two plugins on a single API.
 
 ## The two loops
 
@@ -101,9 +101,7 @@ Webpack inlines all your npm dependencies into the output file. You can `npm ins
 Two paths, depending on what fits your case:
 
 - **Inline** — small plugins, single-API, no npm deps. Push `dist/plugin.js` contents into your API definition's `custom_middleware.code` (base64-encoded). Your CI can do this via `tyk-sync`.
-- **Bundle** — anything with npm deps, or shared across many APIs. Upload `dist/bundle.zip` to your bundle server (S3, mServ, customer-hosted HTTP), reference by URL in API defs.
-
-See `docs/deploying.md` *(coming soon)* for both flows.
+- **Bundle** — anything with npm deps, or shared across many APIs. Upload `dist/bundle.zip` to your bundle server (S3, mServ, customer-hosted HTTP), reference by URL in API defs. To run multiple plugins on a single API, list them in `custom_middleware_bundles` — see [examples/README.md](./examples/README.md#composing-multiple-plugins-on-one-api).
 
 ## What this starter is NOT
 
