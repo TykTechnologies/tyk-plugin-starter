@@ -20,10 +20,7 @@
   "config_data": {
     "jws_secret": "demo-shared-secret"
   },
-  "custom_middleware_bundles": [
-    "pre-trace-id.zip",
-    "jws-request-signing.zip"
-  ],
+  "custom_middleware_bundle": "pre-trace-id.zip,jws-request-signing.zip",
   "custom_middleware_bundle_disabled": false,
   "proxy": {
     "listen_path": "/multi/",

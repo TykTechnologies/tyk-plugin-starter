@@ -9,15 +9,12 @@ Minimal `pre` hook example. Injects an `X-Trace-Id` header on every request befo
 
 ## Composition demo
 
-This plugin is also the second bundle in the multi-bundle e2e at `e2e/tests/multi-bundle.sh`, paired with `jws-request-signing`. Two pre-hook bundles compose onto a single API via `custom_middleware_bundles` in the API definition — both `handler` globals coexist because the gateway wraps each in a per-(file, name) IIFE that aliases the export.
+This plugin is also the second bundle in the multi-bundle e2e at `e2e/tests/multi-bundle.sh`, paired with `jws-request-signing`. Two pre-hook bundles compose onto a single API by passing a comma-separated list in `custom_middleware_bundle` — both `handler` globals coexist because the gateway wraps each in a per-(file, name) IIFE that aliases the export.
 
 ```jsonc
 // e2e/apps/multi-bundle.json
 {
-  "custom_middleware_bundles": [
-    "pre-trace-id.zip",
-    "jws-request-signing.zip"
-  ]
+  "custom_middleware_bundle": "pre-trace-id.zip,jws-request-signing.zip"
 }
 ```
 

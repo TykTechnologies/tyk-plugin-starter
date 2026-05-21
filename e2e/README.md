@@ -42,15 +42,12 @@ Set `KEEP_STACK=1` to leave the compose stack up after tests run (useful for pok
 
 ## Multiple plugins on one API
 
-The gateway accepts a list of bundles per API via `custom_middleware_bundles` — every bundle in the list runs in order on the matching hook. `apps/multi-bundle.json` and `tests/multi-bundle.sh` exercise this pattern by composing `pre-trace-id` and `jws-request-signing` on the same `pre` slot, then asserting both `X-Trace-Id` and `X-Signature` reach the upstream.
+The gateway accepts multiple bundles per API by passing a comma-separated list in the existing `custom_middleware_bundle` string field — every bundle in the list runs in order on the matching hook. `apps/multi-bundle.json` and `tests/multi-bundle.sh` exercise this pattern by composing `pre-trace-id` and `jws-request-signing` on the same `pre` slot, then asserting both `X-Trace-Id` and `X-Signature` reach the upstream.
 
 ```jsonc
 // apps/multi-bundle.json
 {
-  "custom_middleware_bundles": [
-    "pre-trace-id.zip",
-    "jws-request-signing.zip"
-  ]
+  "custom_middleware_bundle": "pre-trace-id.zip,jws-request-signing.zip"
 }
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Multi-bundle composition: assert that two pre-hook bundles listed in
-# custom_middleware_bundles both run on the same API.
+# Multi-bundle composition: assert that two pre-hook bundles listed as a
+# comma-separated value in custom_middleware_bundle both run on the same API.
 #
 # Bundle A (pre-trace-id)        adds X-Trace-Id.
 # Bundle B (jws-request-signing) adds X-Signature.

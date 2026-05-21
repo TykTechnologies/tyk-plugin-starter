@@ -17,15 +17,12 @@ Each example is unit-tested locally **and** runs against a real Tyk OSS gateway 
 
 ## Composing multiple plugins on one API
 
-The gateway accepts a list of bundles per API via `custom_middleware_bundles` — every bundle in the list runs in order on the matching hook. The starter ships an end-to-end demo that pairs `pre-trace-id` with `jws-request-signing` on a single API:
+The gateway accepts multiple bundles per API by passing a comma-separated list in the existing `custom_middleware_bundle` string field — every bundle in the list runs in order on the matching hook. The starter ships an end-to-end demo that pairs `pre-trace-id` with `jws-request-signing` on a single API:
 
 ```jsonc
 // e2e/apps/multi-bundle.json
 {
-  "custom_middleware_bundles": [
-    "pre-trace-id.zip",
-    "jws-request-signing.zip"
-  ]
+  "custom_middleware_bundle": "pre-trace-id.zip,jws-request-signing.zip"
 }
 ```
 
