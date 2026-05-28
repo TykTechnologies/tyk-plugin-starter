@@ -1,4 +1,4 @@
-/// <reference path="./types.d.ts" />
+/// <reference types="@tyk-technologies/tyk-plugin-types" />
 
 // Starter Tyk plugin — pre-request hook.
 // Injects an X-Trace-Id header on every request.

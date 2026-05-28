@@ -112,16 +112,18 @@ export function mockRequest(overrides: Partial<any> = {}): any {
     },
     IgnoreBody: false,
     Scheme: 'https',
+    RequestURI: '/',
     ...overrides,
   };
 }
 
 export function mockResponse(overrides: Partial<any> = {}): any {
   return {
-    Headers: {},
-    MultivalueHeaders: {},
-    Body: '',
     StatusCode: 200,
+    Body: '',
+    Headers: {},
+    SetHeaders: {},
+    DeleteHeaders: [],
     ...overrides,
   };
 }
@@ -137,6 +139,7 @@ export function mockSession(overrides: Partial<any> = {}): any {
     quota_max: 0,
     quota_remaining: 0,
     quota_renewal_rate: 0,
+    quota_renews: 0,
     access_rights: {},
     apply_policy_id: '',
     apply_policies: [],
@@ -145,11 +148,13 @@ export function mockSession(overrides: Partial<any> = {}): any {
     certificate: '',
     basic_auth_data: { password: '', hash_type: '' },
     jwt_data: { secret: '' },
+    hmac_enabled: false,
+    hmac_string: '',
+    is_inactive: false,
     monitor: { trigger_limits: [] },
-    metadata: {},
     tags: [],
     enable_detail_recording: false,
-    enable_detail_recording_v2: false,
+    enable_detailed_recording: false,
     ...overrides,
   };
 }

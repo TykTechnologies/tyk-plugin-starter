@@ -1,17 +1,20 @@
 {
-  "name": "tyk-plugin-starter",
+  "name": "tyk-plugin-auth-check-hmac",
   "version": "0.1.0",
-  "description": "Starter project for Tyk goja plugins — author, test, and build locally; deploy to a Tyk gateway when ready.",
   "private": true,
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "webpack --mode production",
-    "build:bundle": "npm run build && node scripts/build-bundle.mjs",
+    "build:bundle": "npm run build && node ../../scripts/build-bundle.mjs",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0"
   },
   "devDependencies": {
     "@tyk-technologies/tyk-plugin-types": "^0.1.0",
+    "@types/crypto-js": "^4.2.0",
     "@types/node": "^20.10.0",
     "buffer": "^6.0.3",
     "ts-loader": "^9.5.1",

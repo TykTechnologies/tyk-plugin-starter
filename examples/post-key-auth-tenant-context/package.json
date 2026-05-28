@@ -1,13 +1,12 @@
 {
-  "name": "tyk-plugin-starter",
+  "name": "tyk-plugin-post-key-auth-tenant-context",
   "version": "0.1.0",
-  "description": "Starter project for Tyk goja plugins — author, test, and build locally; deploy to a Tyk gateway when ready.",
   "private": true,
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "webpack --mode production",
-    "build:bundle": "npm run build && node scripts/build-bundle.mjs",
+    "build:bundle": "npm run build && node ../../scripts/build-bundle.mjs",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

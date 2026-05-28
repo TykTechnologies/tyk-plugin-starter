@@ -1,0 +1,30 @@
+{
+  "name": "jws-e2e",
+  "api_id": "jws-e2e",
+  "org_id": "default",
+  "use_keyless": true,
+  "active": true,
+  "definition": {
+    "location": "header",
+    "key": "x-api-version"
+  },
+  "version_data": {
+    "not_versioned": true,
+    "versions": {
+      "Default": {
+        "name": "Default",
+        "use_extended_paths": true
+      }
+    }
+  },
+  "config_data": {
+    "jws_secret": "e2e-shared-secret-1234"
+  },
+  "custom_middleware_bundle": "jws-request-signing.zip",
+  "custom_middleware_bundle_disabled": false,
+  "proxy": {
+    "listen_path": "/jws/",
+    "target_url": "http://httpbin.org/",
+    "strip_listen_path": true
+  }
+}

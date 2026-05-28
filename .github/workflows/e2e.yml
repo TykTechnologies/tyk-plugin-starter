@@ -1,0 +1,129 @@
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Each example's plugin is built, deployed into a real goja-enabled Tyk OSS
+# gateway running in Docker, hit with HTTP requests, and asserted via the test
+# scripts in e2e/tests. Per-example bundles AND a combined bundles-<sha>.zip
+# are uploaded as artifacts.
+#
+# The published Tyk OSS image (v5.x) does not yet include the goja JS engine
+# (its merge is in flight on TykTechnologies/tyk:TT-16948-...goja). Until then
+# we cross-compile that branch and overlay the binary onto the published image.
+# When the goja branch merges and a public image with goja support ships,
+# delete the build-gateway-image step and switch e2e/docker-compose.yml to use
+# the public tag directly.
+
+env:
+  TYK_GW_REPO: TykTechnologies/tyk
+  TYK_GW_REF: TT-16948-upgrade-tyk-gateway-jsvm-engine-from-otto-to-goja
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff  # v5
+        with:
+          go-version: '1.25'
+          cache: false
+
+      - name: Build all example bundles
+        run: |
+          set -e
+          for ex in examples/*/; do
+            slug=$(basename "$ex")
+            echo "=== building $slug ==="
+            (cd "$ex" && npm ci && npm test && npm run build:bundle)
+          done
+
+      - name: Checkout tyk gateway source (goja branch)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          repository: ${{ env.TYK_GW_REPO }}
+          ref: ${{ env.TYK_GW_REF }}
+          path: tyk-gateway-src
+          token: ${{ secrets.TYK_GW_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Build goja-enabled gateway image
+        run: |
+          export TYK_SRC="$PWD/tyk-gateway-src"
+          export GOARCH=amd64
+          bash e2e/build-gateway-image.sh
+
+      - name: Run e2e suite
+        run: bash e2e/run.sh
+
+      - name: Upload per-example bundles
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: bundles
+          path: examples/*/dist/bundle.zip
+          retention-days: 30
+
+      - name: Build combined bundle archive
+        if: success()
+        run: |
+          mkdir -p _combined
+          for ex in examples/*/; do
+            slug=$(basename "$ex")
+            cp "$ex/dist/bundle.zip" "_combined/$slug.zip"
+          done
+          (cd _combined && zip -q "bundles-${GITHUB_SHA}.zip" *.zip)
+          ls -la _combined/
+
+      - name: Upload combined bundle archive
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: bundles-combined-${{ github.sha }}
+          path: _combined/bundles-${{ github.sha }}.zip
+          retention-days: 90
+
+      - name: Capture gateway logs on failure
+        if: failure()
+        run: |
+          cd e2e
+          docker compose logs gateway > gateway.log 2>&1 || true
+
+      - name: Upload gateway logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: gateway-logs
+          path: e2e/gateway.log
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Test summary
+        if: always()
+        run: |
+          {
+            echo "## e2e summary"
+            echo
+            echo "| Example | Hook | Bundle |"
+            echo "|---|---|---|"
+            for ex in examples/*/; do
+              slug=$(basename "$ex")
+              hook=$(python3 -c "
+          import json
+          m = json.load(open('$ex/manifest.json'))
+          for k in ('pre','post','post_key_auth','auth_check','response'):
+              if k in m.get('custom_middleware', {}):
+                  print(k); break
+          " 2>/dev/null || echo "?")
+              size=$(stat -c%s "$ex/dist/bundle.zip" 2>/dev/null || echo "?")
+              echo "| \`$slug\` | \`$hook\` | $size bytes |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
