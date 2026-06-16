@@ -23,7 +23,7 @@ if [ -z "${TYK_SRC:-}" ] || [ ! -f "$TYK_SRC/main.go" ]; then
   echo "ERROR: TYK_SRC not set and no tyk source found at ../tyk."
   echo "Either:"
   echo "  - export TYK_SRC=/path/to/tyk-gateway-source"
-  echo "  - or clone TykTechnologies/tyk@feature/goja-driver as a sibling of this repo"
+  echo "  - or clone TykTechnologies/tyk@TT-16948-upgrade-tyk-gateway-jsvm-engine-from-otto-to-goja as a sibling of this repo"
   exit 1
 fi
 

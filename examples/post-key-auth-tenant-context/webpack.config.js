@@ -3,7 +3,7 @@ const webpack = require('webpack');
 
 module.exports = {
   entry: './src/plugin.ts',
-  target: ['web', 'es5'],
+  target: ['web', 'es2020'],
   mode: 'production',
   module: {
     rules: [
