@@ -1,6 +1,6 @@
 # Tyk Goja Plugin Development — AI Brief
 
-This is a Tyk plugin project. Tyk plugins run inside the gateway in a **goja JavaScript runtime** — a Go-implemented ECMAScript engine (roughly ES2020: `let`/`const`, arrow functions, destructuring, template literals, classes, `Promise`, optional chaining `?.`, nullish coalescing `??`, `BigInt`) that is **NOT Node.js**. goja ships in Tyk Gateway **v5.14+**; older gateways run the legacy otto (ES5) engine — see *Targeting older gateways* below.
+This is a Tyk plugin project. Tyk plugins run inside the gateway in a **goja JavaScript runtime** — a Go-implemented ECMAScript engine that is **NOT Node.js**. goja's *guaranteed* language level is **ECMAScript 5.1**, which it implements in full. It also runs much of ES6+ (`let`/`const`, arrow functions, destructuring, template literals, classes, `Promise`, `Map`/`Set`/`Symbol`, optional chaining `?.`, nullish coalescing `??`, `BigInt`), but that surface is a subset that grows with the gateway's bundled goja version — treat it as *available*, not *guaranteed*. goja ships in Tyk Gateway **v5.14+**; older gateways run the legacy otto (ES5.1) engine — see *Targeting older gateways* below. The safe, portable floor is ES5.1: author in modern TypeScript and let the bundler down-level to it.
 
 ## Critical runtime constraints
 
@@ -12,10 +12,10 @@ DO NOT use:
 
 DO use:
 - `var`, `let`, `const`, arrow functions, destructuring, spread, template literals, classes
-- optional chaining (`?.`), nullish coalescing (`??`), `BigInt`, `Map`/`Set`/`Symbol` — goja supports these
+- optional chaining (`?.`), nullish coalescing (`??`), `BigInt`, `Map`/`Set`/`Symbol` — goja runs these, but they are ES6+ (above the ES5.1 floor), so rely on them only when you are targeting goja v5.14+, not older gateways or the otto driver
 - `Array.prototype` methods, `Object.assign`/`keys`/`values`/`entries`, `JSON.parse`/`JSON.stringify`
 
-The build targets **ES2020** (Tyk v5.14+ javascript), so modern syntax passes through to the gateway unchanged.
+The build defaults to an **ES2020** target, which goja v5.14+ runs. But the guaranteed contract is the **ES5.1 floor**: modern syntax works because the bundled goja version happens to implement it, not because it is part of the supported surface. If you need to run on older gateways or the otto driver, lower the target to ES5 (see *Targeting older gateways*) and the bundler down-levels your code and dependencies.
 
 **On `async`/`await` and Promises.** goja supports them, and the gateway drains the microtask queue at the end of each invocation — so a Promise that resolves **synchronously** (e.g. `await Promise.resolve(x)`) works. But there is **no event loop**: you cannot `await` a timer or real I/O, and `TykMakeHttpRequest` is already synchronous. Async syntax buys you nothing here — keep handlers synchronous.
 
