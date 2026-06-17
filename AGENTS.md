@@ -1,20 +1,27 @@
 # Tyk Goja Plugin Development — AI Brief
 
-This is a Tyk plugin project. Tyk plugins run inside the gateway in a **Goja JavaScript runtime** — a Go-implemented ES5.1 engine that is **NOT Node.js**.
+This is a Tyk plugin project. Tyk plugins run inside the gateway in a **goja JavaScript runtime** — a Go-implemented ECMAScript engine that is **NOT Node.js**. goja's *guaranteed* language level is **ECMAScript 5.1**, which it implements in full. It also runs much of ES6+ (`let`/`const`, arrow functions, destructuring, template literals, classes, `Promise`, `Map`/`Set`/`Symbol`, optional chaining `?.`, nullish coalescing `??`, `BigInt`), but that surface is a subset that grows with the gateway's bundled goja version — treat it as *available*, not *guaranteed*. goja ships in Tyk Gateway **v5.14+**; older gateways run the legacy otto (ES5.1) engine — see *Targeting older gateways* below. The safe, portable floor is ES5.1: author in modern TypeScript and let the bundler down-level to it.
 
 ## Critical runtime constraints
 
 DO NOT use:
-- `require()`, `import` resolved at runtime, or any module system
-- `async`/`await`, Promises, or any asynchronous primitive
-- `setTimeout`, `setInterval`, `setImmediate`
-- Node APIs: `fs`, `http`, `path`, `crypto`, `Buffer` (Buffer is polyfilled at build time only)
-- ES2015+ features beyond ES2015: optional chaining (`?.`), nullish coalescing (`??`), `BigInt`
+- `require()` or `import` resolved at runtime — there is no module loader. Your `import`s are resolved at **build** time by webpack and inlined; nothing is loadable at runtime.
+- `setTimeout`, `setInterval`, `setImmediate` — there is no event loop
+- Node APIs: `fs`, `http`, `path`, `crypto`, `Buffer` (Buffer is polyfilled at build time only — prefer the `b64enc`/`b64dec` globals)
+- `async`/`await` for real concurrency — see the note below
 
 DO use:
-- `var`, `let`, `const`, arrow functions, destructuring, template literals
-- `Array.prototype` methods, `Object.assign`, `JSON.parse`/`JSON.stringify`
-- Standard ES2015 syntax — webpack transpiles to ES5.1 at build time
+- `var`, `let`, `const`, arrow functions, destructuring, spread, template literals, classes
+- optional chaining (`?.`), nullish coalescing (`??`), `BigInt`, `Map`/`Set`/`Symbol` — goja runs these, but they are ES6+ (above the ES5.1 floor), so rely on them only when you are targeting goja v5.14+, not older gateways or the otto driver
+- `Array.prototype` methods, `Object.assign`/`keys`/`values`/`entries`, `JSON.parse`/`JSON.stringify`
+
+The build defaults to an **ES2020** target, which goja v5.14+ runs. But the guaranteed contract is the **ES5.1 floor**: modern syntax works because the bundled goja version happens to implement it, not because it is part of the supported surface. If you need to run on older gateways or the otto driver, lower the target to ES5 (see *Targeting older gateways*) and the bundler down-levels your code and dependencies.
+
+**On `async`/`await` and Promises.** goja supports them, and the gateway drains the microtask queue at the end of each invocation — so a Promise that resolves **synchronously** (e.g. `await Promise.resolve(x)`) works. But there is **no event loop**: you cannot `await` a timer or real I/O, and `TykMakeHttpRequest` is already synchronous. Async syntax buys you nothing here — keep handlers synchronous.
+
+### Targeting older gateways (otto)
+
+The goja engine requires Tyk Gateway **v5.14+**. To run on an older gateway, set the plugin driver to `otto`, keep your source within ES5 (no `?.`/`??`/`BigInt`/classes/async), and build with an ES5 target (`tsconfig` `target: ES5`, webpack `target: ['web','es5']`). The gateway docs' *Migrating from otto* section lists the full compatibility differences. New plugins should target goja.
 
 ## Available globals
 
@@ -25,6 +32,7 @@ DO use:
 | `b64enc(s)` / `b64dec(s)` | Base64 standard |
 | `rawb64enc(s)` / `rawb64dec(s)` | Base64 URL-safe |
 | `TykMakeHttpRequest(jsonConfig)` | Synchronous outbound HTTP — returns response as JSON string |
+| `TykBatchRequest(jsonConfig)` | Synchronous batched outbound HTTP — returns responses as JSON string |
 | `TykGetKeyData(apiKey, apiId)` | Read session data, returns JSON string |
 | `TykSetKeyData(apiKey, sessionJson, suppressReset)` | Write session data |
 
@@ -131,7 +139,7 @@ If a test passes locally, it should pass in goja. If it doesn't, the harness has
 
 ## Building
 
-`npm run build` runs webpack with ES5.1 target, producing `dist/plugin.js` — a single file with all dependencies inlined. This is what the gateway runs.
+`npm run build` runs webpack with an ES2020 target (Tyk v5.14+ goja), producing `dist/plugin.js` — a single file with all dependencies inlined. This is what the gateway runs.
 
 `npm run build:bundle` produces `dist/bundle.zip` (manifest.json + plugin.js) for the bundle deployment path.
 

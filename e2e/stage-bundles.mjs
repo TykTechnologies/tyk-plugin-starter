@@ -1,12 +1,10 @@
 #!/usr/bin/env node
-// Stage bundles into e2e/bundles/<slug>.zip with the driver swapped to "otto".
+// Stage example bundles into e2e/bundles/<slug>.zip and recompute each checksum.
 //
-// Why the swap: the publicly published Tyk OSS image (tykio/tyk-gateway:v5.x) is
-// pre-goja-merge, so it only recognises driver="otto" for the JS engine. Plugin
-// code is identical between the two engines (same MiniRequestObject, same TykJS
-// prelude, same registered globals), so flipping just the manifest field is
-// enough. When the goja branch merges and a public image with driver="javascript"
-// support ships, delete this file's swap logic and stage bundles as-is.
+// No driver swap: the e2e gateway is built from the goja branch (see
+// gateway.Dockerfile / build-gateway-image.sh), so it recognises driver="javascript"
+// natively. Bundles are staged as-is. Once goja ships in a public image
+// (Tyk Gateway v5.14+), the custom gateway image can be replaced with a stock tag.
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { execSync } from 'node:child_process';

@@ -34,4 +34,4 @@ npm run build:bundle    # dist/bundle.zip
 - Hook: `response`. One plugin = one hook. Use `handler.ReturnResponseData(...)` (NOT `ReturnData`) — see `manifest.json#/custom_middleware/response`.
 - The regex is greedy on shape, not semantics: `999-99-9999` is masked too, even though it isn't a valid SSN. That is the right behaviour for a redactor — better to scrub a non-SSN than to leak one.
 - This pattern does not enforce word boundaries, so it will match an SSN inside a longer digit run (e.g. `XYZ-123-45-6789-ABC` → `XYZ-***-**-****-ABC`). For most response bodies that is desirable. If you need stricter matching, tighten `SSN_PATTERN` in `src/plugin.ts`.
-- Goja is ES5.1 — no `??`, no `?.`, no async. Stick to the patterns in this plugin.
+- This plugin deliberately stays within the **ES5.1 floor** (no `?.`, no `??`, no async) so it runs on any goja-enabled gateway and even the legacy otto driver. goja v5.14+ does support `?.`/`??`, but ES5.1 is the guaranteed surface — keep to it when you want maximum portability.

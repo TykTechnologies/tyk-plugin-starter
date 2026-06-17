@@ -76,6 +76,16 @@ g.TykMakeHttpRequest = (jsonConfig: string) => {
   );
 };
 
+// TykBatchRequest is a real gateway global (batched outbound HTTP). Its on-the-wire
+// request/response shape isn't mirrored here yet, so fail loudly rather than encode a
+// possibly-wrong shape that would mislead tests — stub it in your test if you need it.
+g.TykBatchRequest = (_jsonConfig: string) => {
+  throw new Error(
+    '[harness] TykBatchRequest is not mocked in this harness. Stub it in your test, ' +
+      'or use TykMakeHttpRequest (mocked via mockHttp) where possible.'
+  );
+};
+
 g.TykGetKeyData = (key: string, _apiId: string) => keyStore.get(key) ?? '';
 g.TykSetKeyData = (key: string, sessionJson: string, _suppressReset: string) => {
   keyStore.set(key, sessionJson);

@@ -8,21 +8,21 @@ These tests build each plugin, deploy it into a real Tyk OSS gateway running in 
 examples/<slug>/dist/bundle.zip
         │
         ▼
-e2e/stage-bundles.mjs        # swaps driver "javascript" → "otto", recomputes checksum
+e2e/stage-bundles.mjs        # recomputes checksum (driver stays "javascript")
         │
         ▼
 e2e/bundles/<slug>.zip ──────► python:3.12-alpine on :8500 (bundle-server)
                                             │
                                             ▼ (gateway downloads at boot)
-e2e/apps/<slug>.json ───────► tykio/tyk-gateway:v5.7 on :8080
+e2e/apps/<slug>.json ───────► tyk-gateway:goja-dev on :18080 (built from goja branch)
                                             │
                                             ▼
 e2e/tests/<slug>.sh ──── curl ──► gateway ──► httpbin.org (upstream)
 ```
 
-## Why driver "otto" instead of "javascript"
+## Gateway image
 
-The current public Tyk OSS image is pre-goja-merge — its `isJSDriver()` only recognises `"otto"`. The plugin code is identical between otto and goja (same `MiniRequestObject`, same `TykJS` prelude, same registered globals), so swapping just the manifest field is enough. When the goja branch merges and a public image with `"javascript"` driver support ships, delete the swap logic in `stage-bundles.mjs`.
+The e2e gateway is **built from the goja branch** — `gateway.Dockerfile` overlays a freshly built binary onto a published base image (see `build-gateway-image.sh`), so it recognises the `"javascript"` driver natively. Bundles are staged as-is; there is **no otto driver swap**. Once goja ships in a public image (Tyk Gateway v5.14+), the custom image (`tyk-gateway:goja-dev`) can be replaced with a stock `tykio/tyk-gateway` tag.
 
 ## Run locally
 
