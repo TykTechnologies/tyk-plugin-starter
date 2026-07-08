@@ -20,7 +20,7 @@ That's the inner loop. **No Tyk component required to run any of it.**
 
 - **Working starter plugin** in `src/plugin.ts` — injects an `X-Trace-Id` header on every request. Replace with your logic.
 - **TypeScript types** for the Tyk plugin API via [`@tyk-technologies/tyk-plugin-types`](https://www.npmjs.com/package/@tyk-technologies/tyk-plugin-types) on npm — autocomplete in any IDE.
-- **Local test harness** in `test/_harness.ts` — mocks the goja runtime so tests run in plain Node via vitest.
+- **Local test harness** in `test/_harness.ts` — mocks the goja runtime so tests run in plain Node via vitest. Includes faithful mocks of the six shared storage bindings (`TykStorageGet/Set/SetNX/Del/TTL/Incr`), TTL and input limits included, plus a `mockStorage` helper to seed/inspect storage from tests.
 - **AGENTS.md** — the constraints brief for AI assistants. Keeps Claude/Cursor/Copilot from suggesting Node APIs like `import axios` or runtime module loading the goja runtime can't do.
 - **Webpack config** targeting ES2020 by default (run by goja v5.14+; the guaranteed floor is ES5.1) — bundles your TypeScript plus npm deps into a single self-contained JS file the gateway can run.
 - **GitHub Actions** — runs tests and builds on every push, plus an end-to-end suite that exercises every example against a real goja-enabled Tyk OSS gateway in Docker (see [e2e/](./e2e/)).

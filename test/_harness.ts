@@ -21,6 +21,14 @@ interface HttpStub {
 const httpStubs: HttpStub[] = [];
 const keyStore = new Map<string, string>();
 
+// Backing store for the TykStorage* bindings (gateway-shared Redis storage).
+// expiresAt is an absolute epoch-ms deadline, or null for "no expiry".
+interface StorageEntry {
+  value: string;
+  expiresAt: number | null;
+}
+const storage = new Map<string, StorageEntry>();
+
 class Middleware {
   constructor(_spec: object) {}
   NewProcessRequest(fn: (req: any, session: any, config: any) => any) {
@@ -89,6 +97,105 @@ g.TykBatchRequest = (_jsonConfig: string) => {
 g.TykGetKeyData = (key: string, _apiId: string) => keyStore.get(key) ?? '';
 g.TykSetKeyData = (key: string, sessionJson: string, _suppressReset: string) => {
   keyStore.set(key, sessionJson);
+};
+
+// TykStorage* bindings (gateway v5.15+, goja): shared Redis-backed storage.
+// The mocks mirror the gateway contract exactly, including the input caps —
+// the gateway throws on violations, so the mocks throw too, letting local
+// tests catch them before deployment.
+
+const STORAGE_MAX_KEY_BYTES = 256;
+const STORAGE_MAX_VALUE_BYTES = 64 * 1024;
+
+function storageValidateKey(fn: string, key: string): void {
+  if (!key) {
+    throw new Error(`[harness] ${fn}: key must not be empty`);
+  }
+  if (Buffer.byteLength(key, 'utf8') > STORAGE_MAX_KEY_BYTES) {
+    throw new Error(`[harness] ${fn}: key exceeds ${STORAGE_MAX_KEY_BYTES} bytes`);
+  }
+}
+
+function storageValidateValue(fn: string, value: string): void {
+  if (Buffer.byteLength(value, 'utf8') > STORAGE_MAX_VALUE_BYTES) {
+    throw new Error(`[harness] ${fn}: value exceeds ${STORAGE_MAX_VALUE_BYTES} bytes`);
+  }
+}
+
+// Returns the live (non-expired) entry, lazily evicting expired ones —
+// TTL is honored against Date.now() at read time, like Redis.
+function storageLiveEntry(key: string): StorageEntry | undefined {
+  const entry = storage.get(key);
+  if (!entry) return undefined;
+  if (entry.expiresAt !== null && entry.expiresAt <= Date.now()) {
+    storage.delete(key);
+    return undefined;
+  }
+  return entry;
+}
+
+g.TykStorageGet = (key: string): string | null => {
+  storageValidateKey('TykStorageGet', key);
+  const entry = storageLiveEntry(key);
+  return entry ? entry.value : null;
+};
+
+g.TykStorageSet = (key: string, value: string, ttlSeconds: number): void => {
+  storageValidateKey('TykStorageSet', key);
+  storageValidateValue('TykStorageSet', value);
+  storage.set(key, {
+    value,
+    expiresAt: ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null,
+  });
+};
+
+g.TykStorageSetNX = (key: string, value: string, ttlSeconds: number): boolean => {
+  storageValidateKey('TykStorageSetNX', key);
+  storageValidateValue('TykStorageSetNX', value);
+  if (storageLiveEntry(key)) {
+    return false; // already claimed
+  }
+  storage.set(key, {
+    value,
+    expiresAt: ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null,
+  });
+  return true;
+};
+
+g.TykStorageDel = (key: string): void => {
+  storageValidateKey('TykStorageDel', key);
+  storage.delete(key);
+};
+
+// Redis TTL semantics: -2 = key missing, -1 = exists with no expiry,
+// otherwise remaining seconds.
+g.TykStorageTTL = (key: string): number => {
+  storageValidateKey('TykStorageTTL', key);
+  const entry = storageLiveEntry(key);
+  if (!entry) return -2;
+  if (entry.expiresAt === null) return -1;
+  return Math.ceil((entry.expiresAt - Date.now()) / 1000);
+};
+
+// Atomic increment. Returns the NEW value as a string (Redis INCR semantics).
+// The ttl is applied only on the increment that creates the key; subsequent
+// increments leave the existing expiry untouched.
+g.TykStorageIncr = (key: string, ttlSeconds: number): string => {
+  storageValidateKey('TykStorageIncr', key);
+  const entry = storageLiveEntry(key);
+  if (!entry) {
+    storage.set(key, {
+      value: '1',
+      expiresAt: ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null,
+    });
+    return '1';
+  }
+  const current = parseInt(entry.value, 10);
+  if (isNaN(current) || String(current) !== entry.value) {
+    throw new Error('[harness] TykStorageIncr: value is not an integer');
+  }
+  entry.value = String(current + 1);
+  return entry.value;
 };
 
 // Block APIs that don't exist in goja so they fail loudly during tests.
@@ -203,6 +310,29 @@ export const mockKeyStore = {
   },
 };
 
+// Seed/inspect the TykStorage* backing store from tests. Mirrors mockKeyStore's
+// shape: preset values, read raw entries, reset. `set` takes an optional
+// ttlSeconds (default: no expiry); `get` returns the live value or undefined
+// (expired entries count as absent); `raw` exposes the underlying entry
+// (value + expiresAt) for TTL assertions.
+export const mockStorage = {
+  set(key: string, value: string, ttlSeconds = 0) {
+    storage.set(key, {
+      value,
+      expiresAt: ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null,
+    });
+  },
+  get(key: string): string | undefined {
+    return storageLiveEntry(key)?.value;
+  },
+  raw(key: string): { value: string; expiresAt: number | null } | undefined {
+    return storage.get(key);
+  },
+  reset() {
+    storage.clear();
+  },
+};
+
 export type Hook = 'pre' | 'post' | 'post_key_auth' | 'auth_check' | 'response';
 
 export function runHook(hook: Hook, request: any, session: any, config: any): any {
@@ -241,5 +371,6 @@ export function clearLogs(): void {
 export function resetAll(): void {
   httpStubs.length = 0;
   keyStore.clear();
+  storage.clear();
   logs.length = 0;
 }

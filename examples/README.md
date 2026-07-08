@@ -12,6 +12,7 @@ Marquee plugin patterns demonstrating common Tyk plugin shapes. Copy a folder, m
 | [post-key-auth-tenant-context](./post-key-auth-tenant-context/) | `post_key_auth` | Read `session.meta_data.tenant_id`, inject `X-Tenant-Id` header for upstream. |
 | [post-correlation-id](./post-correlation-id/) | `post` | Preserve inbound `X-Correlation-Id` or generate UUID v4; uses the `uuid` npm package. |
 | [response-pii-redaction](./response-pii-redaction/) | `response` | Mask SSN-shaped patterns in response bodies before they reach the client. |
+| [idempotency-guard](./idempotency-guard/) | `pre` | Reject duplicate `Idempotency-Key` requests via the atomic `TykStorageSetNX` claim pattern (shared storage bindings). |
 
 Each example is unit-tested locally **and** runs against a real Tyk OSS gateway in CI via `e2e/` — see [e2e/README.md](../e2e/README.md).
 
