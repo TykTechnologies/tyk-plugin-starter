@@ -5,13 +5,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-# Ensure the goja-enabled gateway image exists. (See gateway.Dockerfile for why
-# we don't use the published image directly.)
-TYK_IMAGE="${TYK_IMAGE:-tyk-gateway:goja-dev}"
-if ! docker image inspect "$TYK_IMAGE" >/dev/null 2>&1; then
-  echo "=== Gateway image $TYK_IMAGE not found — building ==="
-  bash ./build-gateway-image.sh
-fi
+# Official Tyk OSS image with the goja JS engine (docker compose pulls it).
+# Drop the -alphaN suffix (→ tykio/tyk-gateway:v5.15.0) after GA.
+TYK_IMAGE="${TYK_IMAGE:-tykio/tyk-gateway:v5.15.0-alpha5}"
 export TYK_IMAGE
 
 echo "=== Staging bundles (recompute checksum) ==="
