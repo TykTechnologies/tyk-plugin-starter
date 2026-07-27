@@ -13,6 +13,7 @@ Marquee plugin patterns demonstrating common Tyk plugin shapes. Copy a folder, m
 | [post-correlation-id](./post-correlation-id/) | `post` | Preserve inbound `X-Correlation-Id` or generate UUID v4; uses the `uuid` npm package. |
 | [response-pii-redaction](./response-pii-redaction/) | `response` | Mask SSN-shaped patterns in response bodies before they reach the client. |
 | [idempotency-guard](./idempotency-guard/) | `pre` | Reject duplicate `Idempotency-Key` requests via the atomic `TykStorageSetNX` claim pattern (shared storage bindings). |
+| [rate-limiter](./rate-limiter/) | `pre` | Per-caller fixed-window rate limit via the atomic `TykStorageIncr` counter — `429` + `Retry-After` when over budget (shared storage bindings). |
 
 Each example is unit-tested locally **and** runs against a real Tyk OSS gateway in CI via `e2e/` — see [e2e/README.md](../e2e/README.md).
 
@@ -32,8 +33,7 @@ Both bundles export a global named `handler`; the gateway aliases each export un
 ## Coming later
 
 - **soap-to-rest** — SOAP-to-REST conversion using `fast-xml-parser`
-- **brute-force-lockout** — track failed auth attempts in shared state (uses `TykStore` when available)
-- **multi-tenant-rate-limit** — custom rate limit keyed by tenant claim
+- **brute-force-lockout** — track failed auth attempts in shared state via `TykStorageIncr` + `TykStorageTTL`
 - **aws-lambda-invoker** — invoke Lambda via signed HTTP using `aws4`
 - **jwe-body-encryption** — encrypt request body with `jose`
 - **custom-datadog-metrics** — emit metrics to Datadog HTTP API
