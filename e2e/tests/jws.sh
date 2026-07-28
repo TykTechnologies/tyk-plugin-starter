@@ -17,8 +17,9 @@ SIG=$(printf '%s' "$RESP" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 hdrs = d.get("headers", {})
-sig = hdrs.get("X-Signature") or hdrs.get("x-signature")
-print(sig or "")
+sig = hdrs.get("X-Signature") or hdrs.get("x-signature") or ""
+if isinstance(sig, list): sig = sig[0] if sig else ""  # go-httpbin echoes headers as arrays
+print(sig)
 ')
 
 if [ -z "$SIG" ]; then

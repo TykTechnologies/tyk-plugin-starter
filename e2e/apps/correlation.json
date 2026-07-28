@@ -21,7 +21,7 @@
   "custom_middleware_bundle_disabled": false,
   "proxy": {
     "listen_path": "/correlation/",
-    "target_url": "http://httpbin.org/",
+    "target_url": "http://httpbin:8080/",
     "strip_listen_path": true
   }
 }

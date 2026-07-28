@@ -8,7 +8,11 @@
     "test:watch": "vitest",
     "build": "webpack --mode production",
     "build:bundle": "npm run build && node scripts/build-bundle.mjs",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "dev:up": "docker compose up -d",
+    "dev:load": "node dev/load.mjs",
+    "dev:down": "docker compose down -v",
+    "dev:logs": "docker compose logs -f gateway"
   },
   "devDependencies": {
     "@tyk-technologies/tyk-plugin-types": "^0.1.0",

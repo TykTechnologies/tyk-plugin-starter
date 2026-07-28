@@ -12,7 +12,9 @@ CORR_OUT=$(printf '%s' "$RESP" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 hdrs = d.get("headers", {})
-print(hdrs.get("X-Correlation-Id") or hdrs.get("x-correlation-id") or "")
+v = hdrs.get("X-Correlation-Id") or hdrs.get("x-correlation-id") or ""
+if isinstance(v, list): v = v[0] if v else ""  # go-httpbin echoes headers as arrays
+print(v)
 ')
 if [ "$CORR_OUT" != "$CORR_IN" ]; then
   echo "FAIL: inbound X-Correlation-Id not preserved (got '$CORR_OUT', wanted '$CORR_IN')"
@@ -25,7 +27,9 @@ CORR_GEN=$(printf '%s' "$RESP2" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 hdrs = d.get("headers", {})
-print(hdrs.get("X-Correlation-Id") or hdrs.get("x-correlation-id") or "")
+v = hdrs.get("X-Correlation-Id") or hdrs.get("x-correlation-id") or ""
+if isinstance(v, list): v = v[0] if v else ""  # go-httpbin echoes headers as arrays
+print(v)
 ')
 if [ -z "$CORR_GEN" ]; then
   echo "FAIL: no X-Correlation-Id seen upstream when none was sent"
