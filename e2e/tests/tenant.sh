@@ -51,7 +51,9 @@ import json, sys
 try:
     d = json.load(sys.stdin)
     hdrs = d.get("headers", {})
-    print(hdrs.get("X-Tenant-Id") or hdrs.get("x-tenant-id") or "")
+    v = hdrs.get("X-Tenant-Id") or hdrs.get("x-tenant-id") or ""
+    if isinstance(v, list): v = v[0] if v else ""  # go-httpbin echoes headers as arrays
+    print(v)
 except Exception:
     print("")
 ')

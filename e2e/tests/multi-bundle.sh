@@ -20,14 +20,18 @@ TRACE=$(printf '%s' "$RESP" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 h = d.get("headers", {})
-print(h.get("X-Trace-Id") or h.get("x-trace-id") or "")
+v = h.get("X-Trace-Id") or h.get("x-trace-id") or ""
+if isinstance(v, list): v = v[0] if v else ""  # go-httpbin echoes headers as arrays
+print(v)
 ')
 
 SIG=$(printf '%s' "$RESP" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 h = d.get("headers", {})
-print(h.get("X-Signature") or h.get("x-signature") or "")
+v = h.get("X-Signature") or h.get("x-signature") or ""
+if isinstance(v, list): v = v[0] if v else ""  # go-httpbin echoes headers as arrays
+print(v)
 ')
 
 if [ -z "$TRACE" ]; then

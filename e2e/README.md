@@ -17,7 +17,7 @@ e2e/bundles/<slug>.zip ──────► python:3.12-alpine on :8500 (bundle
 e2e/apps/<slug>.json ───────► tykio/tyk-gateway:v5.15.0-alpha5 on :18080
                                             │
                                             ▼
-e2e/tests/<slug>.sh ──── curl ──► gateway ──► httpbin.org (upstream)
+e2e/tests/<slug>.sh ──── curl ──► gateway ──► go-httpbin sidecar (upstream)
 ```
 
 ## Gateway image

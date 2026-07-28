@@ -16,6 +16,14 @@ services:
     expose:
       - "8500"
 
+  # Local httpbin (multi-arch go reimplementation, runs offline) — the apps
+  # proxy here instead of the public httpbin.org so the suite is deterministic
+  # and doesn't flake on that host being slow/rate-limited. Mirrors dev/.
+  httpbin:
+    image: mccutchen/go-httpbin:v2.15.0
+    expose:
+      - "8080"
+
   gateway:
     # Official Tyk OSS image with the goja JS engine. Pin to the current
     # pre-release; drop the -alphaN suffix (→ tykio/tyk-gateway:v5.15.0) after GA.
@@ -24,6 +32,8 @@ services:
       redis:
         condition: service_healthy
       bundle-server:
+        condition: service_started
+      httpbin:
         condition: service_started
     volumes:
       - ./tyk.conf:/opt/tyk-gateway/tyk.conf:ro

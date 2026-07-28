@@ -29,10 +29,22 @@ if [ "$MASK_COUNT" -lt 2 ]; then
   exit 1
 fi
 
-# No-SSN body should pass through verbatim
+# No-SSN body should pass through verbatim. Parse the echoed args rather than
+# grep the raw body — go-httpbin pretty-prints and wraps values as arrays
+# ("normal": ["hello"]); httpbin.org echoes a bare string. Accept either.
 RESP2=$(curl -sS "$GW/pii/anything?normal=hello")
-if ! printf '%s' "$RESP2" | grep -q '"normal": "hello"'; then
-  echo "FAIL: clean body did not pass through correctly"
+CLEAN_OUT=$(printf '%s' "$RESP2" | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    v = d.get("args", {}).get("normal", "")
+    if isinstance(v, list): v = v[0] if v else ""
+    print(v)
+except Exception:
+    print("")
+')
+if [ "$CLEAN_OUT" != "hello" ]; then
+  echo "FAIL: clean body did not pass through correctly (got '$CLEAN_OUT')"
   echo "Response: $RESP2"
   exit 1
 fi
