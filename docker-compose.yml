@@ -1,0 +1,42 @@
+# Local quick-start: run YOUR plugin in a real goja-enabled Tyk gateway.
+#
+#   npm run dev:up           # boot redis + httpbin + gateway
+#   npm run dev:load         # build + mount + hot-reload the root plugin
+#   npm run dev:load -- examples/request-mirror   # ...or any plugin dir
+#   npm run dev:down         # stop + clean
+#
+# The gateway image is pinned but overridable:  TYK_IMAGE=... npm run dev:up
+# The host port is overridable:                 GW_PORT=8081 npm run dev:up
+services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  # Multi-arch httpbin reimplementation (runs natively on Apple Silicon).
+  # The generated API definition proxies here, so the loop works fully offline.
+  httpbin:
+    image: mccutchen/go-httpbin:v2.15.0
+    expose:
+      - "8080"
+
+  gateway:
+    # Official published Tyk OSS image with the goja JS engine — recognises the
+    # "javascript" driver and runs these ES2020 plugins natively. Same image the
+    # e2e suite pins. Drop the -alphaN suffix (→ tykio/tyk-gateway:v5.15.0) after
+    # GA. Override with TYK_IMAGE to test against a different build.
+    image: ${TYK_IMAGE:-tykio/tyk-gateway:v5.15.0-alpha5}
+    depends_on:
+      redis:
+        condition: service_healthy
+      httpbin:
+        condition: service_started
+    volumes:
+      - ./dev/tyk.conf:/opt/tyk-gateway/tyk.conf:ro
+      - ./dev/apps:/opt/tyk-gateway/apps:ro
+      - ./dev/middleware:/opt/tyk-gateway/middleware:ro
+    ports:
+      - "${GW_PORT:-8080}:8080"

@@ -96,6 +96,25 @@ Webpack inlines all your npm dependencies into the output file. You can `npm ins
 
 > The bundle format is an open spec: zip(plugin.js, manifest.json) with `manifest.checksum = md5(plugin.js)`. The starter ships `scripts/build-bundle.mjs` (~40 lines of Node) to produce this — no Tyk gateway binary required. See AGENTS.md for the full spec so any tool or agent can produce a valid bundle.
 
+## Run it in a local gateway
+
+Spin up a real Tyk gateway in Docker and load your plugin into it with one command — for when you want to exercise the actual goja runtime and proxy path, not just the unit-test mocks.
+
+```bash
+npm run dev:up                                 # boot redis + httpbin + gateway (Docker)
+npm run dev:load                               # build the root plugin, mount it, hot-reload
+npm run dev:load -- examples/rate-limiter      # ...or load any example / plugin dir
+curl localhost:8080/<plugin>/get               # exercise it (the slug is printed by dev:load)
+npm run dev:logs                               # tail gateway logs
+npm run dev:down                               # stop + clean
+```
+
+`dev:load` reads the plugin's `manifest.json` (hook + handler name), stages the built `plugin.js` into the gateway, generates a keyless API definition pointed at a bundled httpbin upstream, and hot-reloads. After `dev:up`, each change is just `dev:load` — a webpack build plus a `/tyk/reload`.
+
+The gateway image is the official published `tykio/tyk-gateway:v5.15.0-alpha5` — it recognises the `"javascript"` driver and runs these ES2020/goja plugins natively, so `dev:up` works out of the box with no image build. (Drop the `-alphaN` suffix — `TYK_IMAGE=tykio/tyk-gateway:v5.15.0 npm run dev:up` — once GA publishes.)
+
+Overrides: `TYK_IMAGE` (gateway image), `GW_PORT` (host port, default `8080`), `UPSTREAM_URL` (proxy target, default the bundled httpbin). Generated files land in `dev/apps/` and `dev/middleware/` (gitignored).
+
 ## Deploying
 
 Two paths, depending on what fits your case:
@@ -105,7 +124,7 @@ Two paths, depending on what fits your case:
 
 ## What this starter is NOT
 
-- **Not a gateway** — it doesn't run plugins. Tests use mocks. Real execution happens on your Tyk gateway.
+- **Not a gateway** — the starter itself doesn't run plugins; tests use mocks. (The optional `dev:*` scripts run your plugin in a real Tyk container locally — see [Run it in a local gateway](#run-it-in-a-local-gateway).)
 - **Not a deployment tool** — `npm run build` produces an artifact; pushing it is up to your CI / deploy process.
 - **Not Node-equivalent** — Tyk plugins run in goja (v5.14+), not Node. The mocks reflect that. If a test passes locally, it should pass in goja.
 
