@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 // Stage example bundles into e2e/bundles/<slug>.zip and recompute each checksum.
 //
-// No driver swap: the e2e gateway is built from the goja branch (see
-// gateway.Dockerfile / build-gateway-image.sh), so it recognises driver="javascript"
-// natively. Bundles are staged as-is. Once goja ships in a public image
-// (Tyk Gateway v5.14+), the custom gateway image can be replaced with a stock tag.
+// No driver swap: the e2e gateway is the official tykio/tyk-gateway image with
+// the goja JS engine, so it recognises driver="javascript" natively. Bundles
+// are staged as-is.
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -39,8 +38,8 @@ for (const slug of slugs) {
   // Extract
   execSync(`unzip -q -o "${src}" -d "${stage}"`);
 
-  // Bundles ship with driver="javascript" (goja). The e2e gateway is built from
-  // the goja branch so the manifest can stay as-is. No swap needed.
+  // Bundles ship with driver="javascript" (goja). The official gateway image
+  // recognises it natively, so the manifest can stay as-is. No swap needed.
   const manifestPath = join(stage, 'manifest.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (!manifest.custom_middleware) {

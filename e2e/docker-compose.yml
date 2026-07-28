@@ -17,7 +17,9 @@ services:
       - "8500"
 
   gateway:
-    image: ${TYK_IMAGE:-tyk-gateway:goja-dev}
+    # Official Tyk OSS image with the goja JS engine. Pin to the current
+    # pre-release; drop the -alphaN suffix (→ tykio/tyk-gateway:v5.15.0) after GA.
+    image: ${TYK_IMAGE:-tykio/tyk-gateway:v5.15.0-alpha5}
     depends_on:
       redis:
         condition: service_healthy

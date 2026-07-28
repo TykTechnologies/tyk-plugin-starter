@@ -14,7 +14,7 @@ e2e/stage-bundles.mjs        # recomputes checksum (driver stays "javascript")
 e2e/bundles/<slug>.zip ──────► python:3.12-alpine on :8500 (bundle-server)
                                             │
                                             ▼ (gateway downloads at boot)
-e2e/apps/<slug>.json ───────► tyk-gateway:goja-dev on :18080 (built from goja branch)
+e2e/apps/<slug>.json ───────► tykio/tyk-gateway:v5.15.0-alpha5 on :18080
                                             │
                                             ▼
 e2e/tests/<slug>.sh ──── curl ──► gateway ──► httpbin.org (upstream)
@@ -22,7 +22,7 @@ e2e/tests/<slug>.sh ──── curl ──► gateway ──► httpbin.org (u
 
 ## Gateway image
 
-The e2e gateway is **built from the goja branch** — `gateway.Dockerfile` overlays a freshly built binary onto a published base image (see `build-gateway-image.sh`), so it recognises the `"javascript"` driver natively. Bundles are staged as-is; there is **no otto driver swap**. Once goja ships in a public image (Tyk Gateway v5.14+), the custom image (`tyk-gateway:goja-dev`) can be replaced with a stock `tykio/tyk-gateway` tag.
+The e2e gateway is the **official published image with the goja JS engine** — `tykio/tyk-gateway:v5.15.0-alpha5` (pinned in `docker-compose.yml`, overridable via `TYK_IMAGE`). It recognises the `"javascript"` driver natively, so bundles are staged as-is with **no otto driver swap**. Drop the `-alphaN` suffix (→ `tykio/tyk-gateway:v5.15.0`) after GA.
 
 ## Run locally
 

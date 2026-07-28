@@ -7,21 +7,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Each example's plugin is built, deployed into a real goja-enabled Tyk OSS
-# gateway running in Docker, hit with HTTP requests, and asserted via the test
-# scripts in e2e/tests. Per-example bundles AND a combined bundles-<sha>.zip
-# are uploaded as artifacts.
+# Each example's plugin is built, deployed into a real Tyk OSS gateway running
+# in Docker, hit with HTTP requests, and asserted via the test scripts in
+# e2e/tests. Per-example bundles AND a combined bundles-<sha>.zip are uploaded
+# as artifacts.
 #
-# The published Tyk OSS image (v5.x) does not yet include the goja JS engine
-# (its merge is in flight on TykTechnologies/tyk:TT-16948-...goja). Until then
-# we cross-compile that branch and overlay the binary onto the published image.
-# When the goja branch merges and a public image with goja support ships,
-# delete the build-gateway-image step and switch e2e/docker-compose.yml to use
-# the public tag directly.
-
-env:
-  TYK_GW_REPO: TykTechnologies/tyk
-  TYK_GW_REF: TT-16948-upgrade-tyk-gateway-jsvm-engine-from-otto-to-goja
+# The gateway is the official published image with the goja JS engine
+# (tykio/tyk-gateway:v5.15.0-alpha5, pinned in e2e/docker-compose.yml) — pulled
+# directly, no source build.
 
 jobs:
   e2e:
@@ -33,11 +26,6 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff  # v5
-        with:
-          go-version: '1.25'
-          cache: false
-
       - name: Build all example bundles
         run: |
           set -e
@@ -46,20 +34,6 @@ jobs:
             echo "=== building $slug ==="
             (cd "$ex" && npm ci && npm test && npm run build:bundle)
           done
-
-      - name: Checkout tyk gateway source (goja branch)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
-        with:
-          repository: ${{ env.TYK_GW_REPO }}
-          ref: ${{ env.TYK_GW_REF }}
-          path: tyk-gateway-src
-          token: ${{ secrets.TYK_GW_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: Build goja-enabled gateway image
-        run: |
-          export TYK_SRC="$PWD/tyk-gateway-src"
-          export GOARCH=amd64
-          bash e2e/build-gateway-image.sh
 
       - name: Run e2e suite
         run: bash e2e/run.sh

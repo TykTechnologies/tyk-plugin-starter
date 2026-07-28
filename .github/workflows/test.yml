@@ -38,6 +38,8 @@ jobs:
           - auth-check-hmac
           - post-correlation-id
           - post-key-auth-tenant-context
+          - idempotency-guard
+          - rate-limiter
     defaults:
       run:
         working-directory: examples/${{ matrix.example }}
